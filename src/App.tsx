@@ -2,7 +2,7 @@
  * Project: Vintage Cassette Player
  * Feature: Real-scale cassette UI, mechanical deck buttons, and Stripe integration.
  */
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
