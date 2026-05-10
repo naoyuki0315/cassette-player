@@ -1,6 +1,6 @@
 /**
  * Project: Vintage Cassette Player
- * Feature: MP3 upload via EJECT button, dynamic song title, and Stripe integration.
+ * Feature: MP3 upload via EJECT button, dynamic song title, Stripe integration, and functional rotation animation.
  */
 import { useRef, useState, type ChangeEvent } from "react";
 
@@ -75,6 +75,19 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4 font-sans select-none overflow-x-hidden">
       
+      {/* 回転アニメーションの定義 */}
+      <style>
+        {`
+          @keyframes cassette-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          .animate-cassette-spin {
+            animation: cassette-spin 3s linear infinite;
+          }
+        `}
+      </style>
+
       {/* プレイヤーデッキ（背景コンテナ） */}
       <div className="bg-zinc-800 p-6 md:p-12 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.9)] border-t border-zinc-700 border-b-8 border-zinc-900 flex flex-col items-center relative">
         
@@ -106,7 +119,7 @@ export default function App() {
               <div className="absolute top-1/2 left-0 w-full h-[1px] bg-blue-300/30"></div>
               <div className="absolute top-full left-0 w-full h-[1px] bg-blue-300/30"></div>
               
-              {/* 曲名 (長い場合は省略記号...になるようにtruncateを追加) */}
+              {/* 曲名 */}
               <span className="text-blue-900 text-xl md:text-3xl font-bold italic tracking-tight z-10 truncate w-full text-center px-2" style={{ fontFamily: 'cursive' }}>
                 {songTitle}
               </span>
@@ -121,7 +134,7 @@ export default function App() {
 
               {/* 左のハブ（歯車） */}
               <div className="relative z-10 w-8 h-8 md:w-10 md:h-10">
-                 <div className="w-full h-full bg-[#eee] rounded-full flex items-center justify-center shadow-lg" style={isPlaying ? { animation: 'spin 3s linear infinite' } : {}}>
+                 <div className={`w-full h-full bg-[#eee] rounded-full flex items-center justify-center shadow-lg ${isPlaying ? 'animate-cassette-spin' : ''}`}>
                     {/* 6本のツメ */}
                     <div className="absolute w-[120%] h-[16%] bg-[#ccc] rotate-0 shadow-sm"></div>
                     <div className="absolute w-[120%] h-[16%] bg-[#ccc] rotate-60 shadow-sm"></div>
@@ -144,7 +157,7 @@ export default function App() {
 
               {/* 右のハブ（歯車） */}
               <div className="relative z-10 w-8 h-8 md:w-10 md:h-10">
-                 <div className="w-full h-full bg-[#eee] rounded-full flex items-center justify-center shadow-lg" style={isPlaying ? { animation: 'spin 3s linear infinite' } : {}}>
+                 <div className={`w-full h-full bg-[#eee] rounded-full flex items-center justify-center shadow-lg ${isPlaying ? 'animate-cassette-spin' : ''}`}>
                     <div className="absolute w-[120%] h-[16%] bg-[#ccc] rotate-0 shadow-sm"></div>
                     <div className="absolute w-[120%] h-[16%] bg-[#ccc] rotate-60 shadow-sm"></div>
                     <div className="absolute w-[120%] h-[16%] bg-[#ccc] rotate-120 shadow-sm"></div>
@@ -174,7 +187,6 @@ export default function App() {
         {/* ========= デッキの操作ボタン群（メカニカルUI） ========= */}
         <div className="mt-8 md:mt-12 flex gap-1 md:gap-3 bg-zinc-900 p-2 md:p-3 rounded-lg border-b-[6px] border-zinc-950 shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)]">
           
-          {/* EJECTボタン (クリックでファイル選択) */}
           <button 
             onClick={handleEject}
             className="w-14 h-12 md:w-20 md:h-14 bg-zinc-700 text-zinc-400 font-bold rounded border-b-[6px] border-zinc-800 active:border-b-0 active:translate-y-[6px] transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md hover:text-white"
@@ -182,21 +194,14 @@ export default function App() {
             <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-current"></div>
             EJECT
           </button>
-          {/* 隠しファイル入力 */}
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept="audio/*"
-            className="hidden"
-          />
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="audio/*" className="hidden" />
           
           <button 
             onClick={() => { if(isPlaying) togglePlay(); }} 
             className={`w-14 h-12 md:w-20 md:h-14 font-bold rounded transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md
               ${!isPlaying 
-                ? 'bg-zinc-600 text-red-500 border-b-0 translate-y-[6px]' // 停止中は押し込まれた状態
-                : 'bg-zinc-700 text-zinc-400 border-b-[6px] border-zinc-800 hover:text-white'}`} // 再生中は出っ張る
+                ? 'bg-zinc-600 text-red-500 border-b-0 translate-y-[6px]' 
+                : 'bg-zinc-700 text-zinc-400 border-b-[6px] border-zinc-800 hover:text-white'}`}
           >
              <div className="w-3 h-3 bg-current rounded-sm"></div>
              STOP
@@ -216,7 +221,7 @@ export default function App() {
             onClick={() => { if(!isPlaying) togglePlay(); }} 
             className={`w-14 h-12 md:w-20 md:h-14 font-bold rounded transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md
               ${isPlaying 
-                ? 'bg-zinc-600 text-green-400 border-b-0 translate-y-[6px] shadow-inner' // 再生中はガチャンと押し込まれる
+                ? 'bg-zinc-600 text-green-400 border-b-0 translate-y-[6px] shadow-inner' 
                 : 'bg-zinc-700 text-zinc-400 border-b-[6px] border-zinc-800 hover:text-white'}`}
           >
              <div className="w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-current"></div>
@@ -241,7 +246,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* 隠しオーディオプレイヤー */}
       <audio ref={audioRef} src={audioUrl || undefined} preload="auto" playsInline crossOrigin="anonymous" onEnded={() => setIsPlaying(false)} />
       
     </div>
