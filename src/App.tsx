@@ -2,7 +2,7 @@
  * Project: Vintage Cassette Player
  * Feature: MP3 upload via EJECT button, dynamic song title, and Stripe integration.
  */
-import { useRef, useState, ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 
 export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
