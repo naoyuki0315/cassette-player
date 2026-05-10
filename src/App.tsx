@@ -1,15 +1,20 @@
 /**
  * Project: Vintage Cassette Player
- * Feature: Real-scale cassette UI, mechanical deck buttons, and Stripe integration.
+ * Feature: MP3 upload via EJECT button, dynamic song title, and Stripe integration.
  */
-import { useRef, useState } from "react";
+import { useRef, useState, ChangeEvent } from "react";
 
 export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
   const [isPlaying, setIsPlaying] = useState(false);
-
-  // 以前のレコード版のファイル名をそのまま指定しています（publicフォルダ内に配置してください）
-  const audioUrl = "/my_babe.mp3"; 
+  
+  // ★ 初期設定の曲（publicフォルダに入れた安全なファイル名を指定）
+  const [audioUrl, setAudioUrl] = useState<string>("/Blues_With_a_Feeling_2120B.B._.mp3");
+  
+  // ★ カセットのラベルに表示される初期の曲名
+  const [songTitle, setSongTitle] = useState<string>("Blues With a Feeling");
 
   const togglePlay = () => {
     if (!isPlaying) {
@@ -25,8 +30,34 @@ export default function App() {
     }
   };
 
+  // EJECTボタンを押した時の処理（ファイル選択ダイアログを開く）
+  const handleEject = () => {
+    // 再生中ならまずは停止する
+    if (isPlaying) {
+      togglePlay();
+    }
+    // 隠してあるinput要素をクリックしたことにする
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // ファイルが選択（セット）された時の処理
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // 選んだファイルから再生用のURLを作成
+      const url = URL.createObjectURL(file);
+      setAudioUrl(url);
+      
+      // ファイル名から拡張子（.mp3など）を取り除いて、ラベルの曲名にする
+      const nameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
+      setSongTitle(nameWithoutExtension);
+    }
+  };
+
   const handleDonate = () => {
-    // いただいた新しいStripeの支払いリンク（缶コーヒーを奢る）
+    // 新しいStripeの支払いリンク（缶コーヒーを奢る）
     const paymentLink = "https://buy.stripe.com/aFa9ATeXYed74eF49DdIA01";
     if (paymentLink) {
       window.location.href = paymentLink;
@@ -75,9 +106,9 @@ export default function App() {
               <div className="absolute top-1/2 left-0 w-full h-[1px] bg-blue-300/30"></div>
               <div className="absolute top-full left-0 w-full h-[1px] bg-blue-300/30"></div>
               
-              {/* 曲名 */}
-              <span className="text-blue-900 text-xl md:text-3xl font-bold italic tracking-tight z-10" style={{ fontFamily: 'cursive' }}>
-                Awesome Mix Vol.1
+              {/* 曲名 (長い場合は省略記号...になるようにtruncateを追加) */}
+              <span className="text-blue-900 text-xl md:text-3xl font-bold italic tracking-tight z-10 truncate w-full text-center px-2" style={{ fontFamily: 'cursive' }}>
+                {songTitle}
               </span>
             </div>
 
@@ -127,22 +158,13 @@ export default function App() {
 
           {/* === カセット下部の台形とリアルな穴 === */}
           <div className="absolute bottom-0 w-[70%] md:w-[65%] h-[18%] md:h-[20%]">
-            {/* CSS clip-path で台形を表現 */}
             <div className="w-full h-full bg-[#d0d0d0] border-t border-white/50 shadow-[0_-2px_4px_rgba(0,0,0,0.1)] relative flex justify-around items-end pb-2 md:pb-3 px-4 md:px-6" style={{ clipPath: 'polygon(6% 0%, 94% 0%, 100% 100%, 0% 100%)' }}>
-               {/* 左の小さな穴（ピンチローラー用） */}
                <div className="w-3 h-3 md:w-4 md:h-4 bg-zinc-900 rounded-full shadow-[inset_0_2px_5px_rgba(0,0,0,1)] border border-white/20"></div>
-               {/* 左の大きな穴（キャプスタン軸用） */}
                <div className="w-4 h-4 md:w-5 md:h-5 bg-zinc-900 rounded-full shadow-[inset_0_2px_5px_rgba(0,0,0,1)] border border-white/20"></div>
-               
-               {/* 中央の大きな窓（磁気ヘッドが当たる部分・テープの表面が見える） */}
                <div className="w-12 h-4 md:w-16 md:h-5 bg-zinc-900 rounded-sm shadow-[inset_0_2px_5px_rgba(0,0,0,1)] relative flex items-center justify-center border-b border-white/10">
-                  {/* 奥に見える茶色い磁気テープの表現 */}
                   <div className="w-full h-[60%] bg-[#2a1b14] shadow-inner"></div>
                </div>
-               
-               {/* 右の大きな穴（キャプスタン軸用） */}
                <div className="w-4 h-4 md:w-5 md:h-5 bg-zinc-900 rounded-full shadow-[inset_0_2px_5px_rgba(0,0,0,1)] border border-white/20"></div>
-               {/* 右の小さな穴（ピンチローラー用） */}
                <div className="w-3 h-3 md:w-4 md:h-4 bg-zinc-900 rounded-full shadow-[inset_0_2px_5px_rgba(0,0,0,1)] border border-white/20"></div>
             </div>
           </div>
@@ -152,29 +174,41 @@ export default function App() {
         {/* ========= デッキの操作ボタン群（メカニカルUI） ========= */}
         <div className="mt-8 md:mt-12 flex gap-1 md:gap-3 bg-zinc-900 p-2 md:p-3 rounded-lg border-b-[6px] border-zinc-950 shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)]">
           
-          <button className="w-14 h-12 md:w-20 md:h-14 bg-zinc-700 text-zinc-400 font-bold rounded border-b-[6px] border-zinc-800 active:border-b-0 active:translate-y-[6px] transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md">
-            <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-zinc-400"></div>
+          {/* EJECTボタン (クリックでファイル選択) */}
+          <button 
+            onClick={handleEject}
+            className="w-14 h-12 md:w-20 md:h-14 bg-zinc-700 text-zinc-400 font-bold rounded border-b-[6px] border-zinc-800 active:border-b-0 active:translate-y-[6px] transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md hover:text-white"
+          >
+            <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-current"></div>
             EJECT
           </button>
+          {/* 隠しファイル入力 */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="audio/*"
+            className="hidden"
+          />
           
           <button 
             onClick={() => { if(isPlaying) togglePlay(); }} 
             className={`w-14 h-12 md:w-20 md:h-14 font-bold rounded transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md
               ${!isPlaying 
                 ? 'bg-zinc-600 text-red-500 border-b-0 translate-y-[6px]' // 停止中は押し込まれた状態
-                : 'bg-zinc-700 text-zinc-400 border-b-[6px] border-zinc-800'}`} // 再生中は出っ張る
+                : 'bg-zinc-700 text-zinc-400 border-b-[6px] border-zinc-800 hover:text-white'}`} // 再生中は出っ張る
           >
              <div className="w-3 h-3 bg-current rounded-sm"></div>
              STOP
           </button>
           
-          <button className="w-14 h-12 md:w-20 md:h-14 bg-zinc-700 text-zinc-400 font-bold rounded border-b-[6px] border-zinc-800 active:border-b-0 active:translate-y-[6px] transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md">
-             <div className="flex"><div className="w-0 h-0 border-y-[5px] border-y-transparent border-r-[8px] border-r-zinc-400"></div><div className="w-0 h-0 border-y-[5px] border-y-transparent border-r-[8px] border-r-zinc-400"></div></div>
+          <button className="w-14 h-12 md:w-20 md:h-14 bg-zinc-700 text-zinc-400 font-bold rounded border-b-[6px] border-zinc-800 active:border-b-0 active:translate-y-[6px] transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md hover:text-white">
+             <div className="flex"><div className="w-0 h-0 border-y-[5px] border-y-transparent border-r-[8px] border-r-current"></div><div className="w-0 h-0 border-y-[5px] border-y-transparent border-r-[8px] border-r-current"></div></div>
              REW
           </button>
           
-          <button className="w-14 h-12 md:w-20 md:h-14 bg-zinc-700 text-zinc-400 font-bold rounded border-b-[6px] border-zinc-800 active:border-b-0 active:translate-y-[6px] transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md">
-             <div className="flex"><div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-zinc-400"></div><div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-zinc-400"></div></div>
+          <button className="w-14 h-12 md:w-20 md:h-14 bg-zinc-700 text-zinc-400 font-bold rounded border-b-[6px] border-zinc-800 active:border-b-0 active:translate-y-[6px] transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md hover:text-white">
+             <div className="flex"><div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current"></div><div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current"></div></div>
              FF
           </button>
 
@@ -183,7 +217,7 @@ export default function App() {
             className={`w-14 h-12 md:w-20 md:h-14 font-bold rounded transition-all text-[10px] md:text-xs flex flex-col items-center justify-center gap-1 shadow-md
               ${isPlaying 
                 ? 'bg-zinc-600 text-green-400 border-b-0 translate-y-[6px] shadow-inner' // 再生中はガチャンと押し込まれる
-                : 'bg-zinc-700 text-zinc-400 border-b-[6px] border-zinc-800'}`}
+                : 'bg-zinc-700 text-zinc-400 border-b-[6px] border-zinc-800 hover:text-white'}`}
           >
              <div className="w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-current"></div>
              PLAY
